@@ -1,0 +1,60 @@
+version: '3.3'
+services:
+  prometheus:
+    image: hw/prometheus:latest
+    ports:
+      - '9090:9090'
+    volumes:
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention=1d'
+    networks:
+      network: 
+        aliases: 
+          - prometheus
+
+  node-exporter:
+    image: prom/node-exporter:v0.16.0
+    user: root
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points="^/(sys|proc|dev|host|etc)($$|/)"'
+    networks:
+      network:
+        aliases:
+          - node-exporter
+  grafana:
+    image: grafana/grafana:5.0.0
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=secret
+    depends_on:
+      - prometheus
+    ports:
+      - 3000:3000
+    networks:
+      network:
+        aliases:
+          - grafana
+  cadvisor:
+    image: google/cadvisor:v0.29.0
+    networks:
+      network:
+        aliases:
+          - cadvisor
+
+volumes:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  network:
